@@ -1,0 +1,71 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import FavoriteButton from '../components/FavoriteButton.astro';
+import DocIcon from '../components/DocIcon.astro';
+import { getCategories } from '../lib/index';
+
+const categories = getCategories();
+const total = categories.reduce((sum, category) => sum + category.docs.length, 0);
+---
+<BaseLayout>
+  <section class="hero">
+    <h1>开发速查清单</h1>
+    <p>
+      共 {total} 篇文档 · 按分类浏览，或按 <kbd>Ctrl</kbd> + <kbd>K</kbd> 搜索
+    </p>
+  </section>
+  <section class="home-favs">
+    <div class="favs-head">
+      <h2 class="category-title">我的收藏 <span id="fav-count" class="category-count">0</span></h2>
+      <a class="favs-all" href="/favorites">查看全部 →</a>
+    </div>
+    <div id="home-favs" class="fav-list"></div>
+  </section>
+  {
+    categories.map((category) => (
+      <section class="category">
+        <h2 class="category-title" id={category.name}>
+          {category.name}
+          <span class="category-count">{category.docs.length}</span>
+        </h2>
+        <div class="doc-grid">
+          {category.docs.map((doc) => (
+            <article class="doc-card">
+              <FavoriteButton
+                slug={doc.slug}
+                title={doc.title || doc.name}
+                icon={doc.slug}
+              />
+              <a class="doc-link" href={`/docs/${doc.slug}/`}>
+                <DocIcon slug={doc.slug} />
+                <span class="doc-name">{doc.name}</span>
+              </a>
+              {doc.intro && <p class="doc-intro">{doc.intro}</p>}
+              {doc.lang && <span class="doc-lang">{doc.lang}</span>}
+              {doc.contributing && <span class="doc-badge">待完善</span>}
+            </article>
+          ))}
+        </div>
+      </section>
+    ))
+  }
+</BaseLayout>
+
+<script>
+  import { FAVORITES_EVENT, getFavorites } from '../lib/favorites';
+  import { renderFavoritesGrid } from '../lib/favorites-list';
+
+  const container = document.getElementById('home-favs');
+  const countEl = document.getElementById('fav-count');
+  if (container) {
+    const render = () => {
+      renderFavoritesGrid(container, {
+        limit: 8,
+        emptyText: '还没有收藏，点击文档卡片上的 ☆ 即可收藏',
+      });
+      if (countEl) countEl.textContent = String(getFavorites().length);
+    };
+    window.addEventListener(FAVORITES_EVENT, render);
+    render();
+  }
+</script>

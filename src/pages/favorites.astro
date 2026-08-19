@@ -1,0 +1,59 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+<BaseLayout title="我的收藏 · MyRef" description="本地收藏的速查文档">
+  <section class="fav-page">
+    <h1>我的收藏</h1>
+    <div class="fav-actions">
+      <button id="fav-export" type="button">导出 JSON</button>
+      <label class="file-label">
+        导入 JSON
+        <input id="fav-import" type="file" accept="application/json,.json" hidden />
+      </label>
+    </div>
+    <div id="fav-list" class="fav-list"></div>
+  </section>
+</BaseLayout>
+
+<script>
+  import { exportFavorites, importFavorites } from '../lib/favorites';
+  import { renderFavoritesGrid } from '../lib/favorites-list';
+
+  const listEl = document.getElementById('fav-list') as HTMLElement;
+  const exportBtn = document.getElementById('fav-export') as HTMLButtonElement;
+  const importInput = document.getElementById('fav-import') as HTMLInputElement;
+
+  function render() {
+    renderFavoritesGrid(listEl, {
+      removable: true,
+      emptyText: '还没有收藏。浏览文档时点击「收藏」即可加入。',
+    });
+  }
+
+  exportBtn.addEventListener('click', () => {
+    const blob = new Blob([exportFavorites()], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'myref-favorites.json';
+    anchor.click();
+    URL.revokeObjectURL(url);
+  });
+
+  importInput.addEventListener('change', async () => {
+    const file = importInput.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const count = importFavorites(text);
+      window.alert(`已导入 ${count} 条收藏`);
+    } catch (error) {
+      window.alert(`导入失败：${error instanceof Error ? error.message : String(error)}`);
+    }
+    importInput.value = '';
+    render();
+  });
+
+  window.addEventListener('myref:favorites-changed', render);
+  render();
+</script>

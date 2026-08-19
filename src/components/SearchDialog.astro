@@ -1,0 +1,144 @@
+<div id="search-dialog" class="search-dialog" hidden>
+  <div class="search-backdrop" data-search-close></div>
+  <div class="search-panel" role="dialog" aria-modal="true" aria-label="搜索文档">
+    <div class="search-input-row">
+      <input id="search-input" type="search" placeholder="输入关键词，如：git、快捷键、docker…" autocomplete="off" />
+      <button type="button" data-search-close>关闭</button>
+    </div>
+    <p id="search-status" class="search-status" hidden></p>
+    <ul id="search-results" class="search-results"></ul>
+  </div>
+</div>
+
+<script>
+  const dialog = document.getElementById('search-dialog')!;
+  const input = document.getElementById('search-input') as HTMLInputElement;
+  const resultsEl = document.getElementById('search-results')!;
+  const statusEl = document.getElementById('search-status')!;
+
+  let pagefindModule: any = null;
+  let timer: number | undefined;
+  let resultLinks: HTMLAnchorElement[] = [];
+  let activeIndex = 0;
+  const PAGEINDEX_URL = '/pagefind/pagefind.js';
+
+  function openSearch() {
+    dialog.hidden = false;
+    input.focus();
+  }
+
+  function closeSearch() {
+    dialog.hidden = true;
+    input.value = '';
+    resultsEl.innerHTML = '';
+    statusEl.hidden = true;
+  }
+
+  document.addEventListener('keydown', (event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+      event.preventDefault();
+      openSearch();
+    }
+    if (event.key === 'Escape') closeSearch();
+  });
+
+  document.getElementById('search-open')?.addEventListener('click', openSearch);
+  document.querySelectorAll<HTMLElement>('[data-search-close]').forEach((el) => el.addEventListener('click', closeSearch));
+
+  function updateActive() {
+    const items = resultsEl.querySelectorAll<HTMLLIElement>('li');
+    items.forEach((item, index) => item.classList.toggle('active', index === activeIndex));
+    items[activeIndex]?.scrollIntoView({ block: 'nearest' });
+  }
+
+  input.addEventListener('keydown', (event) => {
+    if (resultLinks.length === 0) return;
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      activeIndex = (activeIndex + 1) % resultLinks.length;
+      updateActive();
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      activeIndex = (activeIndex - 1 + resultLinks.length) % resultLinks.length;
+      updateActive();
+    } else if (event.key === 'Home') {
+      event.preventDefault();
+      activeIndex = 0;
+      updateActive();
+    } else if (event.key === 'End') {
+      event.preventDefault();
+      activeIndex = resultLinks.length - 1;
+      updateActive();
+    } else if (event.key === 'Enter') {
+      const link = resultLinks[activeIndex];
+      if (link) {
+        event.preventDefault();
+        window.location.href = link.href;
+      }
+    }
+  });
+
+  async function ensurePagefind() {
+    if (!pagefindModule) {
+      try {
+        pagefindModule = await import(/* @vite-ignore */ PAGEINDEX_URL);
+      } catch (error) {
+        throw new Error('PAGEINDEX_MISSING', { cause: error });
+      }
+      await pagefindModule.init();
+    }
+    return pagefindModule;
+  }
+
+  input.addEventListener('input', () => {
+    const q = input.value.trim();
+    window.clearTimeout(timer);
+    if (!q) {
+      resultsEl.innerHTML = '';
+      resultLinks = [];
+      activeIndex = 0;
+      statusEl.hidden = true;
+      return;
+    }
+    timer = window.setTimeout(async () => {
+      try {
+        const pf = await ensurePagefind();
+        const response = await pf.search(q);
+        const items = response?.results || [];
+        statusEl.hidden = false;
+        statusEl.textContent = items.length > 0 ? `找到 ${items.length} 条结果` : '没有匹配结果';
+        resultsEl.innerHTML = '';
+        resultLinks = [];
+        activeIndex = 0;
+        for (const result of items.slice(0, 20)) {
+          const data = await result.data();
+          const urlMatch = data.url.match(/\/docs\/([^/]+)\//);
+          const slug = urlMatch?.[1] || '';
+          const title = String(data.meta?.title || data.url).replace(/\s*·\s*MyRef\s*$/, '');
+          const li = document.createElement('li');
+          li.innerHTML = `<a href="${data.url}"><span class="result-title">${title}</span><span class="result-excerpt">${data.excerpt || ''}</span></a>`;
+          if (slug) {
+            const { isFavorite } = await import('../lib/favorites');
+            if (isFavorite(slug)) li.querySelector('a')!.insertAdjacentHTML('beforeend', '<span class="result-fav">★ 已收藏</span>');
+          }
+          const link = li.querySelector('a')!;
+          resultLinks.push(link);
+          li.addEventListener('mouseenter', () => {
+            activeIndex = resultLinks.indexOf(link);
+            updateActive();
+          });
+          resultsEl.appendChild(li);
+        }
+        updateActive();
+      } catch (error) {
+        statusEl.hidden = false;
+        console.error('[MyRef Search]', error);
+        const message =
+          error instanceof Error && error.message === 'PAGEINDEX_MISSING'
+            ? '搜索索引不存在：请先执行 npm run build，再用 npm run preview 或静态服务器访问。'
+            : '搜索暂不可用，请查看浏览器控制台获取详情。';
+        statusEl.textContent = message;
+      }
+    }, 200);
+  });
+</script>

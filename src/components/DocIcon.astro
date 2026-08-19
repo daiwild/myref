@@ -1,0 +1,20 @@
+---
+import icons from '../data/doc-icons.svg.json';
+
+interface Props {
+  slug: string;
+  size?: 'card' | 'header';
+}
+
+const { slug, size = 'card' } = Astro.props;
+const svg = icons[slug] ?? '';
+const letter = slug.replace(/[^a-z0-9]/gi, '').charAt(0).toUpperCase() || '?';
+const classes = ['doc-icon', size === 'header' && 'doc-icon--large'];
+---
+{
+  svg ? (
+    <span class={classes} set:html={svg} aria-hidden="true" />
+  ) : (
+    <span class={[...classes, 'doc-icon--letter']} aria-hidden="true">{letter}</span>
+  )
+}

@@ -1,0 +1,45 @@
+---
+import '../styles/global.css';
+import SearchDialog from '../components/SearchDialog.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = 'MyRef · 开发速查',
+  description = '基于 jaywcjlove/reference 的自建开发速查站',
+} = Astro.props;
+---
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <link rel="icon" href="/icons/favicon.ico" type="image/x-icon" />
+    <title>{title}</title>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/">MyRef</a>
+      <nav class="site-nav">
+        <button id="search-open" class="search-trigger" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
+          搜索
+          <kbd>Ctrl K</kbd>
+        </button>
+        <a href="/favorites">收藏</a>
+      </nav>
+    </header>
+    <main class="site-main">
+      <slot />
+    </main>
+    <SearchDialog />
+    <script>
+      import { initFavoriteWidgets } from '../lib/favorites-ui';
+      initFavoriteWidgets();
+    </script>
+  </body>
+</html>

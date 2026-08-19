@@ -1,0 +1,21 @@
+---
+interface Props {
+  slug: string;
+  title: string;
+  icon?: string;
+  variant?: 'card' | 'header';
+}
+
+const { slug, title, icon, variant = 'card' } = Astro.props;
+---
+<button
+  class:list={['fav-btn', `fav-btn--${variant}`]}
+  type="button"
+  data-fav-slug={slug}
+  data-fav-title={title}
+  data-fav-icon={icon ?? ''}
+  aria-pressed="false"
+>
+  <span class="fav-star" aria-hidden="true">☆</span>
+  <span class="fav-label">收藏</span>
+</button>

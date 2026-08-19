@@ -538,7 +538,7 @@ HTML `<form>` 元素用于收集信息并将其发送到外部源。
   <input type="text" name="username" id="username" class="border border-slate-400">
 </form>
 
-请参阅：[HTML输入标记](/html#html-input-tags)
+请参阅：[HTML输入标记](./html.md#html-input-tags)
 
 ### Textarea 标签
 

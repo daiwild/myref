@@ -1,4 +1,3 @@
-import icons from '../data/doc-icons.svg.json';
 import { getFavorites, removeFavorite } from './favorites';
 
 export interface RenderFavoritesOptions {
@@ -7,10 +6,31 @@ export interface RenderFavoritesOptions {
   emptyText?: string;
 }
 
-export function renderFavoritesGrid(container: HTMLElement, options: RenderFavoritesOptions = {}): void {
+let iconsPromise: Promise<Record<string, string>> | null = null;
+
+function loadIcons(): Promise<Record<string, string>> {
+  if (!iconsPromise) {
+    iconsPromise = fetch(`${import.meta.env.BASE_URL}icons-data.json`)
+      .then((response) => {
+        if (!response.ok) throw new Error(`icons-data: ${response.status}`);
+        return response.json() as Promise<Record<string, string>>;
+      })
+      .catch((error) => {
+        console.warn('[MyRef] 图标数据加载失败', error);
+        return {};
+      });
+  }
+  return iconsPromise;
+}
+
+export async function renderFavoritesGrid(
+  container: HTMLElement,
+  options: RenderFavoritesOptions = {},
+): Promise<void> {
   const { limit, removable = false, emptyText = '还没有收藏' } = options;
   const favorites = getFavorites();
   container.innerHTML = '';
+  const icons = await loadIcons();
 
   if (favorites.length === 0) {
     const empty = document.createElement('p');
@@ -27,7 +47,7 @@ export function renderFavoritesGrid(container: HTMLElement, options: RenderFavor
   for (const favorite of shown) {
     const card = document.createElement('a');
     card.className = 'fav-card';
-    card.href = `/docs/${favorite.slug}/`;
+    card.href = `${import.meta.env.BASE_URL}docs/${favorite.slug}/`;
 
     const icon = document.createElement('span');
     icon.setAttribute('aria-hidden', 'true');

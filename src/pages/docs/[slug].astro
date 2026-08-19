@@ -1,5 +1,4 @@
 ---
-import 'katex/dist/katex.min.css';
 import 'highlight.js/styles/github-dark.css';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import FavoriteButton from '../../components/FavoriteButton.astro';
@@ -28,15 +27,16 @@ const { slug, content } = Astro.props;
 const meta = getDocMeta(slug);
 const { html, headings } = await renderMarkdown(content);
 const title = meta?.title || extractFallbackTitle(content, slug);
+const hasMath = /(?<!\\)\$\$|(?<!\\)\$[^$\n]+\$|\\\(|\\\[/.test(content);
 
 function extractFallbackTitle(content: string, slug: string): string {
   const match = content.match(/^\s*([^\n]+?)\s*\n=+\s*$/m);
   return match ? match[1].trim() : slug;
 }
 ---
-<BaseLayout title={`${title} · MyRef`} description={meta?.intro}>
+<BaseLayout title={`${title} · MyRef`} description={meta?.intro} katex={hasMath}>
   <nav class="breadcrumb">
-    <a href="/">首页</a>
+    <a href={`${import.meta.env.BASE_URL}`}>首页</a>
     <span>/</span>
     <span>{meta?.category || '未分类'}</span>
     <span>/</span>

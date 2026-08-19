@@ -15,9 +15,14 @@
 
 ```bash
 npm install
+npm run check    # 校验文档、分类与图标映射完整性
 npm run icons    # 生成文档图标（Simple Icons + Lucide 内联 SVG）
 npm run extract  # 生成 src/data/index.json（分类与文档元数据）
 npm run dev      # 本地开发
 npm run build    # icons -> extract -> astro build -> pagefind 索引
 npm run preview  # 预览构建产物
 ```
+
+## 部署
+
+站点配置了 `base: '/myref/'`，构建产物 `dist/` 需部署到域名的 `/myref/` 子路径下；如果部署位置不同，请同步修改 `astro.config.mjs` 中的 `base`。

@@ -420,7 +420,7 @@ BrowserWindow
 `hasShadow` _boolean_ | 窗口是否有阴影. 默认值 _(true)_
 `opacity` _number_ _(win/mac)_ | 设置窗口的初始透明度，在 0.0（全透明）和 1.0（完全不透明）之间 。 目前仅在 Windows 和 macOS上实现。
 `darkTheme` _boolean_ | 强制窗口使用深色主题，只在部分GTK+3桌面环境下有效。 默认值 _(false)_.
-`transparent` _boolean_ | 使窗口 <a href="/zh/docs/latest/tutorial/window-customization#create-transparent-windows">透明</a>。 默认值 _(false)_. 在Windows上，仅在无边框窗口下起作用。
+`transparent` _boolean_ | 使窗口 <a href="https://www.electronjs.org/zh/docs/latest/tutorial/window-customization#create-transparent-windows">透明</a>。 默认值 _(false)_. 在Windows上，仅在无边框窗口下起作用。
 `type` _string_ | 窗口的类型, 默认为普通窗口. 更多信息见下文
 `visualEffectState` _string_ _(mac)_ | 在 macOS 上指定外观应如何响应窗口活动状态。 必须与 _(vibrancy)_ 属性一起使用。 可能的值有
 `visualEffectState.followWindow` | 当窗口处于激活状态时，后台应自动显示为激活状态，当窗口处于非激活状态时，后台应自动显示为非激活状态。 默认为该值。

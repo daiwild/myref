@@ -3,3 +3,4 @@ dist/
 .astro/
 src/data/index.json
 src/data/doc-icons.svg.json
+public/katex/

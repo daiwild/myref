@@ -24,7 +24,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   const importInput = document.getElementById('fav-import') as HTMLInputElement;
 
   function render() {
-    renderFavoritesGrid(listEl, {
+    void renderFavoritesGrid(listEl, {
       removable: true,
       emptyText: '还没有收藏。浏览文档时点击「收藏」即可加入。',
     });

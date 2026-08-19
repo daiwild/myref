@@ -6,20 +6,32 @@ export interface Favorite {
 }
 
 const KEY = 'myref:favorites';
+const STORAGE_VERSION = 1;
 export const FAVORITES_EVENT = 'myref:favorites-changed';
 
-export function getFavorites(): Favorite[] {
+function readStorage(): Favorite[] {
   try {
     const raw = localStorage.getItem(KEY);
-    const list = raw ? JSON.parse(raw) : [];
-    return Array.isArray(list) ? list : [];
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed;
+    if (parsed && parsed.version === STORAGE_VERSION && Array.isArray(parsed.items)) return parsed.items;
+    return [];
   } catch {
     return [];
   }
 }
 
+export function getFavorites(): Favorite[] {
+  return readStorage();
+}
+
 function save(list: Favorite[]) {
-  localStorage.setItem(KEY, JSON.stringify(list));
+  try {
+    localStorage.setItem(KEY, JSON.stringify({ version: STORAGE_VERSION, items: list }));
+  } catch (error) {
+    console.warn('[MyRef] 收藏保存失败', error);
+  }
   window.dispatchEvent(new CustomEvent(FAVORITES_EVENT));
 }
 
@@ -43,12 +55,16 @@ export function removeFavorite(slug: string) {
 }
 
 export function exportFavorites(): string {
-  return JSON.stringify(getFavorites(), null, 2);
+  return JSON.stringify({ version: STORAGE_VERSION, items: getFavorites() }, null, 2);
 }
 
 export function importFavorites(json: string): number {
-  const list = JSON.parse(json);
-  if (!Array.isArray(list) || !list.every((f) => f && typeof f.slug === 'string' && typeof f.title === 'string')) {
+  const parsed = JSON.parse(json);
+  const list = Array.isArray(parsed) ? parsed : parsed?.version === STORAGE_VERSION ? parsed.items : null;
+  if (
+    !Array.isArray(list) ||
+    !list.every((f) => f && typeof f.slug === 'string' && typeof f.title === 'string')
+  ) {
     throw new Error('JSON 格式不正确（需要 {slug,title,icon?,addedAt?}[]）');
   }
   save(list);

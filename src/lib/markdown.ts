@@ -4,6 +4,7 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import remarkRehype from 'remark-rehype';
 import rehypeRaw from 'rehype-raw';
+import rehypeSanitize, { defaultSchema, type Options as SanitizeOptions } from 'rehype-sanitize';
 import rehypeKatex from 'rehype-katex';
 import rehypeSlug from 'rehype-slug';
 import rehypeAutolinkHeadings from 'rehype-autolink-headings';
@@ -14,13 +15,13 @@ import { toString } from 'mdast-util-to-string';
 import GithubSlugger from 'github-slugger';
 import { data } from './index';
 
+const BASE = import.meta.env.BASE_URL;
+
 export interface TocItem {
   depth: number;
   text: string;
   slug: string;
 }
-
-const IGNORE_RE = /<!--rehype:ignore:start-->[\s\S]*?<!--rehype:ignore:end-->\s*/g;
 
 function rewriteUrl(url: string): string {
   if (/^([a-z]+:|#|\/)/i.test(url)) return url;
@@ -32,15 +33,76 @@ function rewriteUrl(url: string): string {
   const suffix = `${query ? `?${query}` : ''}${hash ? `#${hash}` : ''}`;
   if (rel.endsWith('.md')) {
     const slug = rel.slice(0, -3);
-    return `/docs/${slug}/${suffix}`;
-  }
-  if (pathOnly.startsWith('../icons/')) {
-    return `/icons/${pathOnly.slice('../icons/'.length)}${suffix}`;
+    return `${BASE}docs/${slug}/${suffix}`;
   }
   if (data.docs[rel]) {
-    return `/docs/${rel}/${suffix}`;
+    return `${BASE}docs/${rel}/${suffix}`;
   }
   return url;
+}
+
+const ANY = /^[\s\S]*$/;
+
+const SANITIZE_SCHEMA: SanitizeOptions = {
+  ...defaultSchema,
+  tagNames: [...(defaultSchema.tagNames || []), 'iframe'],
+  attributes: {
+    ...defaultSchema.attributes,
+    a: [...(defaultSchema.attributes?.a || []), 'title', 'target', 'rel', ['className', ANY], ['id', ANY]],
+    img: [
+      ...(defaultSchema.attributes?.img || []),
+      'alt',
+      'title',
+      'width',
+      'height',
+      'loading',
+      ['className', ANY],
+    ],
+    span: [['className', ANY]],
+    pre: [['className', ANY]],
+    code: [['className', ANY]],
+    input: [
+      ['disabled', true],
+      ['checked', true],
+      ['type', 'checkbox'],
+    ],
+    table: [...(defaultSchema.attributes?.table || []), 'align'],
+    th: [['align', ANY], ['className', ANY]],
+    td: [['align', ANY], ['className', ANY]],
+    h1: [['id', ANY], ['className', ANY]],
+    h2: [['id', ANY], ['className', ANY]],
+    h3: [['id', ANY], ['className', ANY]],
+    h4: [['id', ANY], ['className', ANY]],
+    h5: [['id', ANY], ['className', ANY]],
+    h6: [['id', ANY], ['className', ANY]],
+    iframe: [
+      ['src', ANY],
+      ['title', ANY],
+      ['width', ANY],
+      ['height', ANY],
+      ['frameborder', ANY],
+      ['loading', ANY],
+      ['allowfullscreen', true],
+    ],
+  },
+};
+
+function rehypeRemoveIframes() {
+  return (tree: any) => {
+    visit(tree, 'element', (node: any, index: number | undefined, parent: any) => {
+      if (node.tagName !== 'iframe') return;
+      const src = typeof node.properties?.src === 'string' ? node.properties.src : '';
+      let allowed = false;
+      try {
+        allowed = new URL(src).hostname === 'www.openstreetmap.org';
+      } catch {
+        allowed = false;
+      }
+      if (!allowed && parent && typeof index === 'number') {
+        parent.children.splice(index, 1);
+      }
+    });
+  };
 }
 
 function rehypeRewriteUrls() {
@@ -56,18 +118,16 @@ function rehypeRewriteUrls() {
   };
 }
 
-export function cleanSource(raw: string): string {
-  return raw.replace(IGNORE_RE, '').trim();
-}
-
 export async function renderMarkdown(raw: string) {
-  const source = cleanSource(raw);
+  const source = raw.trim();
   const file = await unified()
     .use(remarkParse)
     .use(remarkGfm)
     .use(remarkMath)
     .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeRaw)
+    .use(rehypeSanitize, SANITIZE_SCHEMA)
+    .use(rehypeRemoveIframes)
     .use(rehypeSlug)
     .use(rehypeAutolinkHeadings, { behavior: 'wrap' })
     .use(rehypeKatex, { strict: false })

@@ -6,7 +6,7 @@
       <button type="button" data-search-close>关闭</button>
     </div>
     <p id="search-status" class="search-status" hidden></p>
-    <ul id="search-results" class="search-results"></ul>
+    <ul id="search-results" class="search-results" role="listbox"></ul>
   </div>
 </div>
 
@@ -20,7 +20,7 @@
   let timer: number | undefined;
   let resultLinks: HTMLAnchorElement[] = [];
   let activeIndex = 0;
-  const PAGEINDEX_URL = '/pagefind/pagefind.js';
+  const PAGEINDEX_URL = `${import.meta.env.BASE_URL}pagefind/pagefind.js`;
 
   function openSearch() {
     dialog.hidden = false;
@@ -28,6 +28,7 @@
   }
 
   function closeSearch() {
+    window.clearTimeout(timer);
     dialog.hidden = true;
     input.value = '';
     resultsEl.innerHTML = '';
@@ -47,11 +48,16 @@
 
   function updateActive() {
     const items = resultsEl.querySelectorAll<HTMLLIElement>('li');
-    items.forEach((item, index) => item.classList.toggle('active', index === activeIndex));
+    items.forEach((item, index) => {
+      const selected = index === activeIndex;
+      item.classList.toggle('active', selected);
+      item.setAttribute('aria-selected', String(selected));
+    });
     items[activeIndex]?.scrollIntoView({ block: 'nearest' });
   }
 
   input.addEventListener('keydown', (event) => {
+    if (event.isComposing) return;
     if (resultLinks.length === 0) return;
     if (event.key === 'ArrowDown') {
       event.preventDefault();
@@ -116,7 +122,12 @@
           const slug = urlMatch?.[1] || '';
           const title = String(data.meta?.title || data.url).replace(/\s*·\s*MyRef\s*$/, '');
           const li = document.createElement('li');
-          li.innerHTML = `<a href="${data.url}"><span class="result-title">${title}</span><span class="result-excerpt">${data.excerpt || ''}</span></a>`;
+          li.setAttribute('role', 'option');
+          li.setAttribute('aria-selected', 'false');
+          const resultUrl = data.url.startsWith(import.meta.env.BASE_URL)
+            ? data.url
+            : `${import.meta.env.BASE_URL}${data.url.replace(/^\//, '')}`;
+          li.innerHTML = `<a href="${resultUrl}"><span class="result-title">${title}</span><span class="result-excerpt">${data.excerpt || ''}</span></a>`;
           if (slug) {
             const { isFavorite } = await import('../lib/favorites');
             if (isFavorite(slug)) li.querySelector('a')!.insertAdjacentHTML('beforeend', '<span class="result-fav">★ 已收藏</span>');

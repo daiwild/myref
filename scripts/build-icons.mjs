@@ -67,7 +67,11 @@ const outPath = path.join(root, 'src', 'data', 'doc-icons.svg.json');
 fs.mkdirSync(path.dirname(outPath), { recursive: true });
 fs.writeFileSync(outPath, `${JSON.stringify(out, null, 2)}\n`);
 
+const publicPath = path.join(root, 'public', 'icons-data.json');
+fs.writeFileSync(publicPath, `${JSON.stringify(out)}\n`);
+
 console.log(`已生成 ${Object.keys(out).length} 个文档图标 -> ${outPath}`);
+console.log(`已输出运行时图标数据 -> ${publicPath}`);
 if (warnings.length > 0) {
   console.warn(`警告（${warnings.length}）:\n${warnings.join('\n')}`);
 }

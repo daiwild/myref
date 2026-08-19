@@ -26,3 +26,18 @@ npm run preview  # 预览构建产物
 ## 部署
 
 站点配置了 `base: '/myref/'`，构建产物 `dist/` 需部署到域名的 `/myref/` 子路径下；如果部署位置不同，请同步修改 `astro.config.mjs` 中的 `base`。
+
+### Docker 部署
+
+```bash
+docker compose up -d --build   # 构建并启动
+```
+
+启动后访问 `http://localhost:8080/myref/`（端口映射可在 `docker-compose.yml` 中修改）。如需自定义端口：
+
+```bash
+docker build -t myref .
+docker run -d -p 8080:80 myref
+```
+
+> 容器内站点文件位于 `/usr/share/nginx/html/myref/`，与 `base: '/myref/'` 对应；若修改部署路径，请同步调整 `astro.config.mjs` 与 `Dockerfile`。

@@ -1,0 +1,8 @@
+services:
+  myref:
+    build: .
+    image: myref:latest
+    container_name: myref
+    ports:
+      - '8080:80'
+    restart: unless-stopped
